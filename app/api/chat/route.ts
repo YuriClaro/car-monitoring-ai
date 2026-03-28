@@ -18,11 +18,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Montar array de mensagens pro OpenAI
     const systemMessage = {
       role: "system" as const,
       content:
-        "You are a car maintenance and visual inspection assistant. When images are provided, analyze them and produce an inspection report. Always answer in English and Markdown. Use these sections: ## Summary, ## Visible Findings, ## Severity Level, ## Recommended Actions, ## Notes. In Visible Findings, mention issues such as scratched bumper, dented door, damaged wheel, worn tire, and any other visible damage. If the image is inconclusive, clearly state that. Do not claim certainty without visible evidence.",
+        "You are a car diagnostics and maintenance assistant. Analyze the user's text description and infer the most likely issue, " +
+        "then provide a practical solution plan. If one or more images are uploaded, also analyze visual evidence and include what is visible " +
+        "(for example scratches, dents, wheel damage, tire wear, leaks, warning lights, or broken parts). " +
+        "Always produce a clear Markdown report in English with these sections: " +
+        "## Case Summary, ## Text-Based Analysis, ## Visual Findings, ## Likely Root Cause, ## Proposed Solution, ## Recommended Next Steps, ## Confidence & Notes. " +
+        "Rules: If there is no image, write 'No image provided' in Visual Findings. If the image is unclear, state that explicitly. " +
+        "Do not claim certainty without evidence. Distinguish between observed facts and assumptions. " +
+        "In Proposed Solution, provide actionable steps from quick checks to repair-level actions.",
     };
 
     const currentUserMessageContent: Array<

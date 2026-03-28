@@ -6,6 +6,7 @@ import type { Car, CarFormData } from "@/types/car";
 
 export function useCars() {
   const supabase = createClient();
+  const storageBucket = "car-photos";
 
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,7 @@ export function useCars() {
 
     const { data, error: fetchError } = await supabase
       .from("cars")
-      .select("id, brand, model, year, mileage, notes");
+      .select("id, brand, model, year, mileage, notes, photo_path");
 
     if (fetchError) {
       setError(fetchError.message);
@@ -86,6 +87,19 @@ export function useCars() {
     async (carId: string) => {
       setError(null);
 
+      const carToDelete = cars.find((car) => car.id === carId);
+
+      if (carToDelete?.photo_path) {
+        const { error: removePhotoError } = await supabase.storage
+          .from(storageBucket)
+          .remove([carToDelete.photo_path]);
+
+        if (removePhotoError) {
+          setError(removePhotoError.message);
+          return false;
+        }
+      }
+
       const { error: deleteError } = await supabase
         .from("cars")
         .delete()
@@ -99,7 +113,7 @@ export function useCars() {
       setCars((currentCars) => currentCars.filter((car) => car.id !== carId));
       return true;
     },
-    [supabase]
+    [cars, supabase]
   );
 
   return {

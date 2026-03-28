@@ -5,6 +5,7 @@ export type Car = {
   year: number;
   mileage: number;
   notes: string | null;
+  photo_path: string | null;
 };
 
 export type CarFormData = {
