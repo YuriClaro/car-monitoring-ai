@@ -17,6 +17,7 @@ type ConversationSummary = {
 };
 
 const STORAGE_KEY = "ai-car-conversation-id";
+const DEVICE_KEY_STORAGE = "ai-car-device-key";
 
 const WELCOME_MESSAGE: Message = {
   id: "1",
@@ -32,11 +33,39 @@ export function useMessages() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getOrCreateDeviceKey = useCallback(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const existingKey = localStorage.getItem(DEVICE_KEY_STORAGE);
+    if (existingKey) {
+      return existingKey;
+    }
+
+    const generatedKey =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    localStorage.setItem(DEVICE_KEY_STORAGE, generatedKey);
+    return generatedKey;
+  }, []);
+
   const loadConversations = useCallback(async () => {
+    const deviceKey = getOrCreateDeviceKey();
+    if (!deviceKey) {
+      throw new Error("Missing device key");
+    }
+
     setIsLoadingConversations(true);
 
     try {
-      const response = await fetch("/api/chat?list=conversations");
+      const response = await fetch("/api/chat?list=conversations", {
+        headers: {
+          "X-Chat-Device-Id": deviceKey,
+        },
+      });
       if (!response.ok) {
         throw new Error("Failed to load conversations");
       }
@@ -50,11 +79,21 @@ export function useMessages() {
     } finally {
       setIsLoadingConversations(false);
     }
-  }, []);
+  }, [getOrCreateDeviceKey]);
 
   const loadHistory = useCallback(async (existingConversationId: string) => {
+    const deviceKey = getOrCreateDeviceKey();
+    if (!deviceKey) {
+      throw new Error("Missing device key");
+    }
+
     const response = await fetch(
-      `/api/chat?conversationId=${encodeURIComponent(existingConversationId)}`
+      `/api/chat?conversationId=${encodeURIComponent(existingConversationId)}`,
+      {
+        headers: {
+          "X-Chat-Device-Id": deviceKey,
+        },
+      }
     );
 
     if (!response.ok) {
@@ -65,7 +104,7 @@ export function useMessages() {
     const history: Message[] = Array.isArray(data.messages) ? data.messages : [];
 
     setMessages(history.length > 0 ? history : [WELCOME_MESSAGE]);
-  }, []);
+  }, [getOrCreateDeviceKey]);
 
   useEffect(() => {
     const storedConversationId = localStorage.getItem(STORAGE_KEY);
@@ -82,6 +121,9 @@ export function useMessages() {
 
     loadHistory(storedConversationId).catch((err) => {
       console.error("History load error:", err);
+      localStorage.removeItem(STORAGE_KEY);
+      setConversationId(null);
+      setMessages([WELCOME_MESSAGE]);
       setError("Could not load previous conversation");
     });
   }, [loadHistory, loadConversations]);
@@ -114,10 +156,16 @@ export function useMessages() {
       setIsLoading(true);
 
       try {
+        const deviceKey = getOrCreateDeviceKey();
+        if (!deviceKey) {
+          throw new Error("Missing device key");
+        }
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "X-Chat-Device-Id": deviceKey,
           },
           body: JSON.stringify({
             messages: currentMessages.map((m) => ({
@@ -151,7 +199,7 @@ export function useMessages() {
         setIsLoading(false);
       }
     },
-    [messages, addMessage, conversationId, loadConversations]
+    [messages, addMessage, conversationId, getOrCreateDeviceKey, loadConversations]
   );
 
   const selectConversation = useCallback(
@@ -183,10 +231,16 @@ export function useMessages() {
 
   const deleteConversation = useCallback(
     async (targetConversationId: string) => {
+      const deviceKey = getOrCreateDeviceKey();
+      if (!deviceKey) {
+        throw new Error("Missing device key");
+      }
+
       const response = await fetch("/api/chat", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
+          "X-Chat-Device-Id": deviceKey,
         },
         body: JSON.stringify({ conversationId: targetConversationId }),
       });
@@ -203,7 +257,7 @@ export function useMessages() {
         startNewConversation();
       }
     },
-    [conversationId, startNewConversation]
+    [conversationId, getOrCreateDeviceKey, startNewConversation]
   );
 
   return {

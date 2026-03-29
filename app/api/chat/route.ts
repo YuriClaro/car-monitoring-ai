@@ -42,10 +42,23 @@ function getSupabaseAdminClient() {
   });
 }
 
+function getDeviceKeyFromRequest(request: NextRequest) {
+  const deviceKey = request.headers.get("x-chat-device-id")?.trim();
+  return deviceKey && deviceKey.length > 0 ? deviceKey : null;
+}
+
 export async function GET(request: NextRequest) {
   const listMode = request.nextUrl.searchParams.get("list");
   const conversationId = request.nextUrl.searchParams.get("conversationId");
   const query = request.nextUrl.searchParams.get("query")?.trim().toLowerCase();
+  const deviceKey = getDeviceKeyFromRequest(request);
+
+  if (!deviceKey) {
+    return NextResponse.json(
+      { error: "Missing device identifier" },
+      { status: 400 }
+    );
+  }
 
   const supabase = getSupabaseAdminClient();
   if (!supabase) {
@@ -59,6 +72,7 @@ export async function GET(request: NextRequest) {
     const { data: conversationsData, error: conversationsError } = await supabase
       .from("chat_conversations")
       .select("id, title, created_at")
+      .eq("owner_key", deviceKey)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -70,24 +84,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { data: recentMessagesData, error: recentMessagesError } =
-      await supabase
-        .from("chat_messages")
-        .select("conversation_id, content, created_at")
-        .order("created_at", { ascending: false })
-        .limit(500);
+    const conversationIds = ((conversationsData ?? []) as DbConversationRow[]).map(
+      (conversation) => conversation.id
+    );
 
-    if (recentMessagesError) {
-      console.error("Recent messages fetch error:", recentMessagesError);
-      return NextResponse.json(
-        { error: "Failed to load conversations" },
-        { status: 500 }
-      );
+    let recentMessagesData: DbConversationMessageRow[] = [];
+
+    if (conversationIds.length > 0) {
+      const { data: recentMessagesRows, error: recentMessagesError } =
+        await supabase
+          .from("chat_messages")
+          .select("conversation_id, content, created_at")
+          .in("conversation_id", conversationIds)
+          .order("created_at", { ascending: false })
+          .limit(500);
+
+      if (recentMessagesError) {
+        console.error("Recent messages fetch error:", recentMessagesError);
+        return NextResponse.json(
+          { error: "Failed to load conversations" },
+          { status: 500 }
+        );
+      }
+
+      recentMessagesData = (recentMessagesRows ?? []) as DbConversationMessageRow[];
     }
 
     const latestMessageByConversation = new Map<string, DbConversationMessageRow>();
 
-    ((recentMessagesData ?? []) as DbConversationMessageRow[]).forEach((row) => {
+    recentMessagesData.forEach((row) => {
       if (!latestMessageByConversation.has(row.conversation_id)) {
         latestMessageByConversation.set(row.conversation_id, row);
       }
@@ -130,6 +155,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const { data: conversation, error: conversationError } = await supabase
+    .from("chat_conversations")
+    .select("id")
+    .eq("id", conversationId)
+    .eq("owner_key", deviceKey)
+    .single();
+
+  if (conversationError || !conversation) {
+    return NextResponse.json(
+      { error: "Conversation not found" },
+      { status: 404 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("chat_messages")
     .select("id, role, content, image_data_urls, created_at")
@@ -158,6 +197,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const deviceKey = getDeviceKeyFromRequest(request);
+    if (!deviceKey) {
+      return NextResponse.json(
+        { error: "Missing device identifier" },
+        { status: 400 }
+      );
+    }
+
     const { messages, userMessage, imageDataUrls, conversationId } =
       await request.json();
     const safeMessages = Array.isArray(messages) ? messages : [];
@@ -177,6 +224,23 @@ export async function POST(request: NextRequest) {
 
     let activeConversationId = safeConversationId;
 
+    if (activeConversationId) {
+      const { data: existingConversation, error: existingConversationError } =
+        await supabase
+          .from("chat_conversations")
+          .select("id")
+          .eq("id", activeConversationId)
+          .eq("owner_key", deviceKey)
+          .single();
+
+      if (existingConversationError || !existingConversation) {
+        return NextResponse.json(
+          { error: "Conversation not found" },
+          { status: 404 }
+        );
+      }
+    }
+
     if (!activeConversationId) {
       const firstMessageTitle =
         typeof userMessage === "string" && userMessage.trim().length > 0
@@ -185,7 +249,10 @@ export async function POST(request: NextRequest) {
 
       const { data: newConversation, error: conversationError } = await supabase
         .from("chat_conversations")
-        .insert({ title: firstMessageTitle })
+        .insert({
+          title: firstMessageTitle,
+          owner_key: deviceKey,
+        })
         .select("id")
         .single();
 
@@ -312,6 +379,14 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const deviceKey = getDeviceKeyFromRequest(request);
+    if (!deviceKey) {
+      return NextResponse.json(
+        { error: "Missing device identifier" },
+        { status: 400 }
+      );
+    }
+
     const { conversationId } = await request.json();
     const safeConversationId =
       typeof conversationId === "string" && conversationId.trim().length > 0
@@ -333,16 +408,25 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { error } = await supabase
+    const { data: deletedConversations, error } = await supabase
       .from("chat_conversations")
       .delete()
-      .eq("id", safeConversationId);
+      .eq("id", safeConversationId)
+      .eq("owner_key", deviceKey)
+      .select("id");
 
     if (error) {
       console.error("Conversation delete error:", error);
       return NextResponse.json(
         { error: "Failed to delete conversation" },
         { status: 500 }
+      );
+    }
+
+    if (!deletedConversations || deletedConversations.length === 0) {
+      return NextResponse.json(
+        { error: "Conversation not found" },
+        { status: 404 }
       );
     }
 
