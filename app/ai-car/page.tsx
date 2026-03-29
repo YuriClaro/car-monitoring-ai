@@ -7,11 +7,21 @@ import remarkGfm from "remark-gfm";
 
 import { Button } from "@/components/ui/button";
 import { useMessages } from "@/lib/hooks/useMessages";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AICarPage() {
-  const openAiLogoUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/logo-site/gpt-logo/open-ai-logo.png`
-    : "";
+  const supabase = createClient();
+  const {
+    data: { publicUrl: openAiLightLogoUrl },
+  } = supabase.storage
+    .from("logo-site")
+    .getPublicUrl("gpt-logo/open-ai-light-logo.png");
+
+  const {
+    data: { publicUrl: openAiDarkLogoUrl },
+  } = supabase.storage
+    .from("logo-site")
+    .getPublicUrl("gpt-logo/open-ai-dark-logo.png");
 
   const {
     messages,
@@ -126,13 +136,16 @@ export default function AICarPage() {
     <section className="mx-auto flex h-full w-full max-w-6xl flex-col p-6">
       <div className="mb-4">
         <h1 className="flex items-center gap-2 text-2xl font-semibold">
-          {openAiLogoUrl ? (
-            <img
-              src={openAiLogoUrl}
-              alt="OpenAI logo"
-              className="h-6 w-6 object-contain"
-            />
-          ) : null}
+          <img
+            src={openAiLightLogoUrl}
+            alt="OpenAI logo for light mode"
+            className="h-6 w-6 object-contain dark:hidden"
+          />
+          <img
+            src={openAiDarkLogoUrl}
+            alt="OpenAI logo for dark mode"
+            className="hidden h-6 w-6 object-contain dark:block"
+          />
           <span>CarGPT</span>
         </h1>
         <p className="text-sm text-muted-foreground">
