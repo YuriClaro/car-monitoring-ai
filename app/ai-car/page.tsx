@@ -104,9 +104,9 @@ export default function AICarPage() {
 
   const formatConversationDate = (isoDate: string) => {
     const date = new Date(isoDate);
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
+    return date.toLocaleDateString("en-US", {
       month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -229,7 +229,7 @@ export default function AICarPage() {
           <div className="border-b p-3 md:hidden">
             <Button className="w-full justify-start gap-2" onClick={startNewConversation}>
               <Plus size={16} />
-              Nova conversa
+              New chat
             </Button>
           </div>
 
