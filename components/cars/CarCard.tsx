@@ -68,9 +68,6 @@ export function CarCard({ car, onDetails, onDelete }: CarCardProps) {
           <span className="font-medium">Mileage</span>
           <span className="font-semibold">{car.mileage} mi</span>
         </p>
-        <p className="text-xs text-muted-foreground">
-          Click Details to open the modal.
-        </p>
       </CardContent>
       <CardFooter className="gap-2 pt-2">
         <Button variant="secondary" onClick={() => onDetails(car)}>

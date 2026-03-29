@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { CarFront } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Car, CarFormData } from "@/types/car";
@@ -19,7 +20,7 @@ interface CarFormProps {
   formData: CarFormData;
   isSaving: boolean;
   onClose: () => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>;
+  onSubmit: (photoFile: File | null) => Promise<void>;
   onFormChange: (data: CarFormData) => void;
 }
 
@@ -32,16 +33,92 @@ export function CarForm({
   onSubmit,
   onFormChange,
 }: CarFormProps) {
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  }, [isOpen, editingCar]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await onSubmit(photoFile);
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      event.target.value = "";
+      return;
+    }
+
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
+      <div className="w-full max-w-xl overflow-hidden rounded-xl border bg-background shadow-xl">
+        <div className="relative h-48 w-full border-b bg-muted/40">
+          {photoPreview ? (
+            <img
+              src={photoPreview}
+              alt="Selected car photo preview"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-muted-foreground">
+              <CarFront size={18} />
+              No photo selected
+            </div>
+          )}
+
+          <div className="absolute right-3 top-3 flex gap-2">
+            <label className="cursor-pointer rounded-md bg-black/70 px-2 py-1 text-xs text-white">
+              {photoPreview ? "Change photo" : "Add photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+                disabled={isSaving}
+              />
+            </label>
+            {photoPreview ? (
+              <button
+                type="button"
+                className="rounded-md bg-black/70 px-2 py-1 text-xs text-white"
+                onClick={handleRemovePhoto}
+                disabled={isSaving}
+              >
+                Remove
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="p-6">
         <h2 className="mb-4 text-xl font-semibold">
           {editingCar ? "Edit car" : "Create car"}
         </h2>
 
-        <form className="space-y-3" onSubmit={onSubmit}>
+        <form className="space-y-3" onSubmit={handleSubmit}>
           <Input
             placeholder="Brand"
             value={formData.brand}
@@ -103,6 +180,7 @@ export function CarForm({
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

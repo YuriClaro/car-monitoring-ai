@@ -34,8 +34,53 @@ export function useCars() {
     loadCars();
   }, [loadCars]);
 
+  const uploadCarPhoto = useCallback(
+    async (carId: string, file: File, oldPhotoPath?: string | null) => {
+      if (oldPhotoPath) {
+        const { error: removeOldError } = await supabase.storage
+          .from(storageBucket)
+          .remove([oldPhotoPath]);
+
+        if (removeOldError) {
+          setError(removeOldError.message);
+          return false;
+        }
+      }
+
+      const fileExtension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const safeExtension = fileExtension.replace(/[^a-z0-9]/g, "") || "jpg";
+      const newPhotoPath = `${carId}/${Date.now()}.${safeExtension}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(storageBucket)
+        .upload(newPhotoPath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setError(uploadError.message);
+        return false;
+      }
+
+      const { error: updateError } = await supabase
+        .from("cars")
+        .update({ photo_path: newPhotoPath })
+        .eq("id", carId);
+
+      if (updateError) {
+        await supabase.storage.from(storageBucket).remove([newPhotoPath]);
+        setError(updateError.message);
+        return false;
+      }
+
+      return true;
+    },
+    [supabase, storageBucket],
+  );
+
   const saveCar = useCallback(
-    async (formData: CarFormData, editingCar: Car | null) => {
+    async (formData: CarFormData, editingCar: Car | null, photoFile?: File | null) => {
       setError(null);
 
       const payload = {
@@ -66,21 +111,42 @@ export function useCars() {
           setError(updateError.message);
           return false;
         }
-      } else {
-        const { error: insertError } = await supabase
-          .from("cars")
-          .insert(payload);
 
-        if (insertError) {
+        if (photoFile) {
+          const uploaded = await uploadCarPhoto(
+            editingCar.id,
+            photoFile,
+            editingCar.photo_path,
+          );
+
+          if (!uploaded) {
+            return false;
+          }
+        }
+      } else {
+        const { data: insertedCar, error: insertError } = await supabase
+          .from("cars")
+          .insert(payload)
+          .select("id")
+          .single();
+
+        if (insertError || !insertedCar) {
           setError(insertError.message);
           return false;
+        }
+
+        if (photoFile) {
+          const uploaded = await uploadCarPhoto(insertedCar.id, photoFile, null);
+          if (!uploaded) {
+            return false;
+          }
         }
       }
 
       await loadCars();
       return true;
     },
-    [supabase, loadCars]
+    [supabase, loadCars, uploadCarPhoto]
   );
 
   const deleteCar = useCallback(
