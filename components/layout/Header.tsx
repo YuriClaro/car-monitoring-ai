@@ -13,10 +13,16 @@ export function Header() {
     .getPublicUrl("menu-logo/menu-logo.png");
 
   const {
-    data: { publicUrl: openAiLogoUrl },
+    data: { publicUrl: openAiLightLogoUrl },
   } = supabase.storage
     .from("logo-site")
-    .getPublicUrl("gpt-logo/open-ai-logo.png");
+    .getPublicUrl("gpt-logo/open-ai-light-logo.png");
+
+  const {
+    data: { publicUrl: openAiDarkLogoUrl },
+  } = supabase.storage
+    .from("logo-site")
+    .getPublicUrl("gpt-logo/open-ai-dark-logo.png");
 
   return (
     <header className="border-b bg-background">
@@ -35,12 +41,21 @@ export function Header() {
           <Button variant="ghost" asChild>
             <Link href="/ai-car" className="flex items-center gap-2">
               <img
-                src={openAiLogoUrl}
-                alt="OpenAI logo"
-                className="h-4 w-4 object-contain"
+                src={openAiLightLogoUrl}
+                alt="OpenAI logo for light mode"
+                className="h-4 w-4 object-contain dark:hidden"
+              />
+              <img
+                src={openAiDarkLogoUrl}
+                alt="OpenAI logo for dark mode"
+                className="hidden h-4 w-4 object-contain dark:block"
               />
               <span>CarGPT</span>
             </Link>
+          </Button>
+
+          <Button variant="ghost" asChild>
+            <Link href="/settings">Settings</Link>
           </Button>
         </div>
       </nav>

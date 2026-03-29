@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   CarFilters,
@@ -129,11 +129,10 @@ export default function Home() {
     setEditingCar(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (photoFile: File | null) => {
     setIsSaving(true);
 
-    const success = await saveCar(formData, editingCar);
+    const success = await saveCar(formData, editingCar, photoFile);
 
     if (success) {
       closeModal();
