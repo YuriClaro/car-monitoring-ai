@@ -123,5 +123,6 @@ export function useCars() {
     setError,
     saveCar,
     deleteCar,
+    reloadCars: loadCars,
   };
 }

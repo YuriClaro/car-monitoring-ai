@@ -8,7 +8,6 @@ interface CarListProps {
   isLoading: boolean;
   emptyMessage?: string;
   onDetails: (car: Car) => void;
-  onEdit: (car: Car) => void;
   onDelete: (carId: string) => void;
 }
 
@@ -17,7 +16,6 @@ export function CarList({
   isLoading,
   emptyMessage = "No cars registered yet.",
   onDetails,
-  onEdit,
   onDelete,
 }: CarListProps) {
   if (isLoading) {
@@ -39,7 +37,6 @@ export function CarList({
           key={car.id}
           car={car}
           onDetails={onDetails}
-          onEdit={onEdit}
           onDelete={onDelete}
         />
       ))}

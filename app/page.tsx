@@ -41,7 +41,7 @@ const toOptionalNumber = (value: string) => {
 };
 
 export default function Home() {
-  const { cars, loading, error, saveCar, deleteCar } = useCars();
+  const { cars, loading, error, saveCar, deleteCar, reloadCars } = useCars();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<Car | null>(null);
@@ -49,6 +49,7 @@ export default function Home() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [startDetailsInEditMode, setStartDetailsInEditMode] = useState(false);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
   const [filters, setFilters] = useState<CarFiltersState>(emptyFilters);
 
@@ -122,18 +123,6 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (car: Car) => {
-    setEditingCar(car);
-    setFormData({
-      brand: car.brand,
-      model: car.model,
-      year: String(car.year),
-      mileage: String(car.mileage),
-      notes: car.notes ?? "",
-    });
-    setIsModalOpen(true);
-  };
-
   const closeModal = () => {
     setIsModalOpen(false);
     setFormData(emptyForm);
@@ -161,13 +150,15 @@ export default function Home() {
     }
   };
 
-  const openDetailsModal = (car: Car) => {
+  const openDetailsModal = (car: Car, startInEditMode = false) => {
     setSelectedCar(car);
+    setStartDetailsInEditMode(startInEditMode);
     setIsDetailsModalOpen(true);
   };
 
   const closeDetailsModal = () => {
     setIsDetailsModalOpen(false);
+    setStartDetailsInEditMode(false);
     setSelectedCar(null);
   };
 
@@ -198,8 +189,7 @@ export default function Home() {
             ? "No cars match the current filters."
             : "No cars registered yet."
         }
-        onDetails={openDetailsModal}
-        onEdit={openEditModal}
+        onDetails={(car) => openDetailsModal(car, false)}
         onDelete={handleDelete}
       />
 
@@ -216,7 +206,27 @@ export default function Home() {
       <CarDetails
         isOpen={isDetailsModalOpen}
         car={selectedCar}
+        startInEditMode={startDetailsInEditMode}
         onClose={closeDetailsModal}
+        onSave={async (car, formData) => saveCar(formData, car)}
+        onCarUpdated={(carId, updates) => {
+          if (selectedCar?.id === carId) {
+            setSelectedCar((currentCar) =>
+              currentCar ? { ...currentCar, ...updates } : currentCar,
+            );
+          }
+
+          void reloadCars();
+        }}
+        onPhotoUpdated={(carId, photoPath) => {
+          if (selectedCar?.id === carId) {
+            setSelectedCar((currentCar) =>
+              currentCar ? { ...currentCar, photo_path: photoPath } : currentCar,
+            );
+          }
+
+          void reloadCars();
+        }}
       />
     </div>
   );
