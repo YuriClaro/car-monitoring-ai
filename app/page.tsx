@@ -268,14 +268,15 @@ export default function Home() {
             onClick={(event) => event.stopPropagation()}
           >
             <h2 id="delete-car-title" className="text-lg font-semibold">
-              Tem certeza que deseja excluir o carro?
+              You are about to delete {carPendingDelete.brand} {carPendingDelete.model} (
+              {carPendingDelete.year})
             </h2>
             <p
               id="delete-car-description"
               className="mt-2 text-sm text-muted-foreground"
             >
-              Essa acao ira remover {carPendingDelete.brand} {carPendingDelete.model} (
-              {carPendingDelete.year}) de forma permanente.
+              This action will permanently remove {carPendingDelete.brand} {carPendingDelete.model} (
+              {carPendingDelete.year}) from the database.
             </p>
 
             <div className="mt-5 flex justify-end gap-2">
@@ -285,7 +286,7 @@ export default function Home() {
                 onClick={closeDeleteModal}
                 disabled={isDeleting}
               >
-                Cancelar
+                Cancel
               </Button>
               <Button
                 type="button"
@@ -293,7 +294,7 @@ export default function Home() {
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? "Excluindo..." : "Excluir carro"}
+                {isDeleting ? "Deleting..." : "Delete Car"}
               </Button>
             </div>
           </div>
