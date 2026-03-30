@@ -53,12 +53,14 @@ export default function AICarPage() {
     const value = question.trim();
     if (!value && attachedImages.length === 0) return;
 
+    const imagesToSend = [...attachedImages];
+
     setQuestion("");
-    await sendMessage(value, attachedImages);
     setAttachedImages([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    await sendMessage(value, imagesToSend);
   };
 
   const handlePickImages = () => {
