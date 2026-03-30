@@ -51,6 +51,8 @@ export default function Home() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [startDetailsInEditMode, setStartDetailsInEditMode] = useState(false);
   const [selectedCar, setSelectedCar] = useState<Car | null>(null);
+  const [carPendingDelete, setCarPendingDelete] = useState<Car | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [filters, setFilters] = useState<CarFiltersState>(emptyFilters);
 
   const normalizedFilters = useMemo(
@@ -141,12 +143,36 @@ export default function Home() {
     setIsSaving(false);
   };
 
-  const handleDelete = async (carId: string) => {
-    const success = await deleteCar(carId);
+  const requestDelete = (carId: string) => {
+    const car = cars.find((currentCar) => currentCar.id === carId) ?? null;
+    setCarPendingDelete(car);
+  };
 
-    if (success && selectedCar?.id === carId) {
+  const handleDelete = async () => {
+    if (!carPendingDelete) {
+      return;
+    }
+
+    setIsDeleting(true);
+    const success = await deleteCar(carPendingDelete.id);
+
+    if (success && selectedCar?.id === carPendingDelete.id) {
       closeDetailsModal();
     }
+
+    if (success) {
+      setCarPendingDelete(null);
+    }
+
+    setIsDeleting(false);
+  };
+
+  const closeDeleteModal = () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setCarPendingDelete(null);
   };
 
   const openDetailsModal = (car: Car, startInEditMode = false) => {
@@ -189,7 +215,7 @@ export default function Home() {
             : "No cars registered yet."
         }
         onDetails={(car) => openDetailsModal(car, false)}
-        onDelete={handleDelete}
+        onDelete={requestDelete}
       />
 
       <CarForm
@@ -227,6 +253,52 @@ export default function Home() {
           void reloadCars();
         }}
       />
+
+      {carPendingDelete ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-car-title"
+          aria-describedby="delete-car-description"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="delete-car-title" className="text-lg font-semibold">
+              Tem certeza que deseja excluir o carro?
+            </h2>
+            <p
+              id="delete-car-description"
+              className="mt-2 text-sm text-muted-foreground"
+            >
+              Essa acao ira remover {carPendingDelete.brand} {carPendingDelete.model} (
+              {carPendingDelete.year}) de forma permanente.
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDeleteModal}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Excluindo..." : "Excluir carro"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
