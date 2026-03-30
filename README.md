@@ -1,109 +1,195 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Car Monitor AI
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A web application for car management with AI-assisted analysis.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+The system combines vehicle registration, advanced filtering, photo uploads, and an intelligent chat (CarGPT) to support diagnostics and maintenance guidance. Conversation persistence and data storage are handled with Supabase, and AI responses are generated through OpenAI.
 
-## Features
+## Project Overview
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+This project is built with a modular architecture using the Next.js App Router.
 
-## Demo
+- Cars Module
+  - Car CRUD (brand, model, year, mileage, notes)
+  - Upload and removal of each car photo in Supabase Storage
+  - Filters by text, brand, model, year range, and mileage range
+  - Details modal with view and edit modes
+  - Custom deletion confirmation dialog
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+- AI Chat Module (CarGPT)
+  - Device-based conversation persistence
+  - Text and image message support for analysis
+  - Image attachments via button and clipboard paste (Ctrl+V)
+  - History, search, new conversation, and conversation deletion
 
-## Deploy to Vercel
+- Settings Module
+  - Toggle between light and dark themes
 
-Vercel deployment will guide you through creating a Supabase account and project.
+## Technologies Used
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+- Next.js (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS
+- shadcn/ui + Radix UI
+- Supabase (Database + Storage)
+- OpenAI API
+- React Markdown + remark-gfm
+- Lucide Icons
+- ESLint
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+## Architecture
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+A Next.js-centered full-stack architecture:
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+- Frontend
+  - Main car page in app/page.tsx
+  - AI chat in app/ai-car/page.tsx
+  - Settings in app/settings/page.tsx
 
-## Clone and run locally
+- Data access layer
+  - Client hooks for cars and messages
+  - Supabase client for database and storage operations
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+- API server-side
+  - Route Handler in app/api/chat/route.ts to:
+    - list conversations
+    - load history
+    - send messages to AI
+    - delete conversations
 
-2. Create a Next.js app using the Supabase Starter template npx command
+- Persistence
+  - Car and chat tables in Supabase
+  - Car and logo images in Supabase Storage
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+## Main Features
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### Cars
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+- Create, edit, and delete cars
+- Car photo upload
+- Photo updates from the details modal
+- Combined filtering across multiple criteria
+- Details modal that blocks outside-click close while in edit mode
 
-3. Use `cd` to change into the app's directory
+### CarGPT
 
-   ```bash
-   cd with-supabase-app
-   ```
+- Conversation-context chat
+- Text-only, image-only, and mixed messages
+- Image attachments from local upload
+- Image attachments via Ctrl+V (clipboard)
+- Markdown-rendered assistant responses
 
-4. Rename `.env.example` to `.env.local` and update the following:
+## API Documentation
 
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+### Chat API
 
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+Base path: /api/chat
 
-5. You can now run the Next.js local development server:
+- GET /api/chat?list=conversations
+  - Lists conversations for the authenticated device via X-Chat-Device-Id header
 
-   ```bash
-   npm run dev
-   ```
+- GET /api/chat?conversationId={id}
+  - Returns the conversation message history
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+- POST /api/chat
+  - Sends a message to AI and stores both user and assistant messages
+  - Supports imageDataUrls for multimodal analysis
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+- DELETE /api/chat
+  - Deletes a conversation using conversationId in the request body
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+## Environment Variables
 
-## Feedback and issues
+Create a .env.local file in the project root with:
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+OPENAI_API_KEY=your_openai_api_key
+```
 
-## More Supabase examples
+Notes:
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+- SUPABASE_SERVICE_ROLE_KEY is required for server-side chat route operations.
+- OPENAI_API_KEY is required to generate CarGPT responses.
+
+## Getting Started
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Configure .env.local as described above.
+
+3. Run the project in development mode:
+
+```bash
+npm run dev
+```
+
+4. Open:
+
+- http://localhost:3000
+
+## Available Scripts
+
+- npm run dev: starts the development server
+- npm run build: creates a production build
+- npm run start: runs the production build
+- npm run lint: runs lint checks
+
+## Suggested Database Structure
+
+For full functionality, ensure equivalent tables exist:
+
+- cars
+  - id
+  - brand
+  - model
+  - year
+  - mileage
+  - notes
+  - photo_path
+
+- chat_conversations
+  - id
+  - owner_key
+  - title
+  - created_at
+
+- chat_messages
+  - id
+  - conversation_id
+  - role
+  - content
+  - image_data_urls
+  - created_at
+
+## Project Structure
+
+```text
+app/
+  ai-car/page.tsx
+  api/chat/route.ts
+  settings/page.tsx
+  page.tsx
+components/
+  cars/
+  layout/
+  ui/
+lib/
+  hooks/
+  supabase/
+types/
+```
+
+## Roadmap Ideas
+
+- Real user authentication with account management
+- Dedicated car details page with maintenance history
+- Image upload to private buckets with signed URLs
+- Automated tests (unit and integration)
+- CI/CD for lint, build, and deployment
