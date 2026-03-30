@@ -39,7 +39,12 @@ export function CarCard({ car, onDetails, onDelete }: CarCardProps) {
 
   return (
     <Card className="shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative h-40 w-full overflow-hidden rounded-t-xl border-b bg-muted/40">
+      <button
+        type="button"
+        className="relative h-40 w-full overflow-hidden rounded-t-xl border-b bg-muted/40 text-left"
+        onClick={() => onDetails(car)}
+        aria-label={`Open details for ${car.brand} ${car.model} ${car.year}`}
+      >
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -52,7 +57,7 @@ export function CarCard({ car, onDetails, onDelete }: CarCardProps) {
             No photo uploaded
           </div>
         )}
-      </div>
+      </button>
 
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">

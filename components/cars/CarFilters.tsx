@@ -39,26 +39,26 @@ export function CarFilters({
     <div className="mb-6 rounded-lg border bg-card p-4 shadow-sm">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="search" className="block text-center">
+          <Label htmlFor="search" className="block">
             Search
           </Label>
-          <Input
-            id="search"
-            placeholder="Search by brand, model, year or mileage"
-            value={filters.query}
-            onChange={(event) => handleChange("query", event.target.value)}
-            className="text-center"
-          />
-        </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              id="search"
+              placeholder="Search by brand, model, year or mileage"
+              value={filters.query}
+              onChange={(event) => handleChange("query", event.target.value)}
+              className="sm:flex-1"
+            />
 
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsExpanded((currentState) => !currentState)}
-          >
-            {isExpanded ? "Hide filters" : "Filter"}
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsExpanded((currentState) => !currentState)}
+            >
+              {isExpanded ? "Hide filters" : "Filter"}
+            </Button>
+          </div>
         </div>
       </div>
 

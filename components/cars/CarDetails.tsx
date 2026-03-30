@@ -181,86 +181,90 @@ export function CarDetails({
       onClick={handleBackdropClick}
     >
       <div
-        className="w-full max-w-2xl overflow-hidden rounded-xl border bg-background shadow-xl"
+        className="w-full max-w-4xl overflow-hidden rounded-xl border bg-background shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="relative h-52 w-full border-b bg-muted/40">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={`${title} photo`}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-muted-foreground">
-              <CarFront size={18} />
-              No photo available
-            </div>
-          )}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-4">
-            <p className="text-lg font-semibold text-white">{title}</p>
-          </div>
-
-          <div className="absolute right-3 top-3 flex gap-2">
-            <label className="cursor-pointer rounded-md bg-black/70 px-2 py-1 text-xs text-white">
-              {imageUrl ? "Change photo" : "Add photo"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-                disabled={isUploading}
-              />
-            </label>
+        <div className="grid md:grid-cols-[420px_minmax(0,1fr)]">
+          <div className="relative h-72 w-full border-b bg-black md:h-full md:min-h-[560px] md:border-b-0 md:border-r">
             {imageUrl ? (
-              <button
-                type="button"
-                className="rounded-md bg-black/70 px-2 py-1 text-xs text-white"
-                onClick={handleRemoveImage}
-                disabled={isUploading}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        {uploadError ? (
-          <div className="border-b border-red-400/40 bg-red-950/20 px-5 py-2 text-xs text-red-300">
-            {uploadError}
-          </div>
-        ) : null}
-
-        <div className="grid gap-3 p-5 sm:grid-cols-2">
-          {detailsFields.map((field) => (
-            <div key={field.key} className="rounded-lg border bg-card p-3">
-              <p className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-                {field.icon} {field.label}
-              </p>
-              {field.content}
-            </div>
-          ))}
-
-          <div className="rounded-lg border bg-card p-3 sm:col-span-2">
-            <p className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
-              <FileText size={14} /> Notes
-            </p>
-            {isEditing ? (
-              <textarea
-                value={formData.notes}
-                onChange={(event) =>
-                  setFormData((prev) => ({ ...prev, notes: event.target.value }))
-                }
-                className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              <img
+                src={imageUrl}
+                alt={`${title} photo`}
+                className="h-full w-full object-contain"
               />
             ) : (
-              <p className="text-sm">{car.notes?.trim() ? car.notes : "No notes"}</p>
+              <div className="flex h-full w-full items-center justify-center gap-2 text-sm text-muted-foreground">
+                <CarFront size={18} />
+                No photo available
+              </div>
             )}
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent p-4">
+              <p className="text-lg font-semibold text-white">{title}</p>
+            </div>
+
+            <div className="absolute right-3 top-3 flex gap-2">
+              <label className="cursor-pointer rounded-md bg-black/70 px-2 py-1 text-xs text-white">
+                {imageUrl ? "Change photo" : "Add photo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  disabled={isUploading}
+                />
+              </label>
+              {imageUrl ? (
+                <button
+                  type="button"
+                  className="rounded-md bg-black/70 px-2 py-1 text-xs text-white"
+                  onClick={handleRemoveImage}
+                  disabled={isUploading}
+                >
+                  Remove
+                </button>
+              ) : null}
+            </div>
           </div>
 
-          <p className="break-all text-xs text-muted-foreground sm:col-span-2">
-            ID: {car.id}
-          </p>
+          <div className="min-w-0">
+            {uploadError ? (
+              <div className="border-b border-red-400/40 bg-red-950/20 px-5 py-2 text-xs text-red-300">
+                {uploadError}
+              </div>
+            ) : null}
+
+            <div className="space-y-3 p-5">
+              {detailsFields.map((field) => (
+                <div key={field.key} className="rounded-lg border bg-card p-3">
+                  <p className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    {field.icon} {field.label}
+                  </p>
+                  {field.content}
+                </div>
+              ))}
+
+              <div className="rounded-lg border bg-card p-3">
+                <p className="mb-1 flex items-center gap-2 text-xs text-muted-foreground">
+                  <FileText size={14} /> Notes
+                </p>
+                {isEditing ? (
+                  <textarea
+                    value={formData.notes}
+                    onChange={(event) =>
+                      setFormData((prev) => ({ ...prev, notes: event.target.value }))
+                    }
+                    className="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                ) : (
+                  <p className="text-sm">{car.notes?.trim() ? car.notes : "No notes"}</p>
+                )}
+              </div>
+
+              <p className="break-all text-xs text-muted-foreground">
+                ID: {car.id}
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t p-4">
