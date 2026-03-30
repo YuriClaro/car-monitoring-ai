@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { ImagePlus, MessageSquare, Plus, Search, Send, Trash2, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -65,15 +65,14 @@ export default function AICarPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFilesSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const appendImageFiles = async (files: File[]) => {
+    if (files.length === 0) {
+      return;
+    }
 
     setUploadError(null);
 
-    const validFiles = Array.from(files).filter((file) => {
+    const validFiles = files.filter((file) => {
       const isImage = file.type.startsWith("image/");
       const isUnder10Mb = file.size <= 10 * 1024 * 1024;
       return isImage && isUnder10Mb;
@@ -81,6 +80,10 @@ export default function AICarPage() {
 
     if (validFiles.length !== files.length) {
       setUploadError("Some files were ignored. Please use images up to 10MB.");
+    }
+
+    if (validFiles.length === 0) {
+      return;
     }
 
     const dataUrls = await Promise.all(
@@ -96,6 +99,28 @@ export default function AICarPage() {
     );
 
     setAttachedImages((prev) => [...prev, ...dataUrls].slice(0, 4));
+  };
+
+  const handleFilesSelected = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    await appendImageFiles(Array.from(files));
+  };
+
+  const handlePasteImage = async (event: ClipboardEvent<HTMLInputElement>) => {
+    const clipboardItems = Array.from(event.clipboardData.items);
+    const imageFiles = clipboardItems
+      .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
+      .map((item) => item.getAsFile())
+      .filter((file): file is File => file !== null);
+
+    if (imageFiles.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+    await appendImageFiles(imageFiles);
   };
 
   const removeImage = (index: number) => {
@@ -325,7 +350,7 @@ export default function AICarPage() {
                 {uploadError}
               </div>
             ) : null}
-
+            
             <div className="flex gap-2">
               <input
                 ref={fileInputRef}
@@ -348,6 +373,7 @@ export default function AICarPage() {
                 ref={inputRef}
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
+                onPaste={handlePasteImage}
                 placeholder="Describe the issue or send only images for analysis"
                 disabled={isLoading}
                 className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-60"
