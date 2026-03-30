@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { useMessages } from "@/lib/hooks/useMessages";
 import { createClient } from "@/lib/supabase/client";
 
+type PendingDeleteConversation = {
+  id: string;
+  title: string;
+  preview: string;
+};
+
 export default function AICarPage() {
   const supabase = createClient();
   const {
@@ -42,6 +48,9 @@ export default function AICarPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [attachedImages, setAttachedImages] = useState<string[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingDeleteConversation, setPendingDeleteConversation] =
+    useState<PendingDeleteConversation | null>(null);
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,16 +155,43 @@ export default function AICarPage() {
     return haystack.includes(searchTerm.trim().toLowerCase());
   });
 
-  const handleDeleteConversation = async (targetConversationId: string) => {
-    const confirmed = window.confirm("Delete this conversation? This action cannot be undone.");
-    if (!confirmed) {
+  const requestDeleteConversation = (targetConversationId: string) => {
+    const conversation =
+      conversations.find((item) => item.id === targetConversationId) ?? null;
+
+    if (!conversation) {
       return;
     }
 
+    setPendingDeleteConversation({
+      id: conversation.id,
+      title: conversation.title,
+      preview: conversation.preview,
+    });
+  };
+
+  const closeDeleteConversationModal = () => {
+    if (isDeletingConversation) {
+      return;
+    }
+
+    setPendingDeleteConversation(null);
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!pendingDeleteConversation) {
+      return;
+    }
+
+    setIsDeletingConversation(true);
+
     try {
-      await deleteConversation(targetConversationId);
+      await deleteConversation(pendingDeleteConversation.id);
+      setPendingDeleteConversation(null);
     } catch (err) {
       console.error("Delete conversation error:", err);
+    } finally {
+      setIsDeletingConversation(false);
     }
   };
 
@@ -239,7 +275,7 @@ export default function AICarPage() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => handleDeleteConversation(conversation.id)}
+                      onClick={() => requestDeleteConversation(conversation.id)}
                       className="rounded p-1 text-muted-foreground hover:bg-background hover:text-foreground"
                       aria-label="Delete conversation"
                     >
@@ -390,6 +426,55 @@ export default function AICarPage() {
           </form>
         </div>
       </div>
+
+      {pendingDeleteConversation ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-conversation-title"
+          aria-describedby="delete-conversation-description"
+          onClick={closeDeleteConversationModal}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border bg-background p-5 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 id="delete-conversation-title" className="text-lg font-semibold">
+              You are about to delete this chat
+            </h2>
+            <p
+              id="delete-conversation-description"
+              className="mt-2 text-sm text-muted-foreground"
+            >
+              This action will permanently remove the conversation
+              {pendingDeleteConversation.title
+                ? ` "${pendingDeleteConversation.title}"`
+                : ""}
+              . This cannot be undone.
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeDeleteConversationModal}
+                disabled={isDeletingConversation}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDeleteConversation}
+                disabled={isDeletingConversation}
+              >
+                {isDeletingConversation ? "Deleting..." : "Delete Chat"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
