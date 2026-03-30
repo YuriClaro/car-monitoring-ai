@@ -1,10 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 export function Header() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const selectedTheme = mounted ? theme ?? "light" : "light";
+  const isDark = selectedTheme === "dark";
+
   const supabase = createClient();
   const {
     data: { publicUrl: logoUrl },
@@ -54,8 +66,12 @@ export function Header() {
             </Link>
           </Button>
 
-          <Button variant="ghost" asChild>
-            <Link href="/settings">Settings</Link>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+          >
+            {isDark ? "Light Mode" : "Dark Mode"}
           </Button>
         </div>
       </nav>
