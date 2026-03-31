@@ -56,7 +56,7 @@ export function CarFilters({
               variant="outline"
               onClick={() => setIsExpanded((currentState) => !currentState)}
             >
-              {isExpanded ? "Hide filters" : "Filter"}
+              {isExpanded ? "Hide filters" : "Show filters"}
             </Button>
           </div>
         </div>
