@@ -31,7 +31,8 @@ This project is built with a modular architecture using the Next.js App Router.
 - TypeScript
 - Tailwind CSS
 - shadcn/ui + Radix UI
-- Supabase (Database + Storage)
+- **Drizzle ORM** (PostgreSQL type-safe queries)
+- Supabase (PostgreSQL Database + Storage)
 - OpenAI API
 - React Markdown + remark-gfm
 - Lucide Icons
@@ -41,24 +42,30 @@ This project is built with a modular architecture using the Next.js App Router.
 
 A Next.js-centered full-stack architecture:
 
-- Frontend
+- **Frontend**
   - Main car page in app/page.tsx
   - AI chat in app/ai-car/page.tsx
   - Settings in app/settings/page.tsx
 
-- Data access layer
-  - Client hooks for cars and messages
-  - Supabase client for database and storage operations
+- **Data Access Layer**
+  - Client hooks for cars and messages (lib/hooks/)
+  - Drizzle ORM for type-safe database queries (src/db/)
+  - Supabase client for storage operations (lib/supabase/)
 
-- API server-side
+- **Database**
+  - Drizzle ORM schema in src/db/schema.ts
+  - PostgreSQL via Supabase
+  - Tables: cars, chat_conversations, chat_messages
+
+- **API Server-side**
   - Route Handler in app/api/chat/route.ts to:
     - list conversations
     - load history
     - send messages to AI
     - delete conversations
 
-- Persistence
-  - Car and chat tables in Supabase
+- **Persistence**
+  - Car and chat data in PostgreSQL (managed via Drizzle)
   - Car and logo images in Supabase Storage
 
 ## Main Features
@@ -122,9 +129,16 @@ Notes:
 npm install
 ```
 
-2. Configure .env.local as described above.
+2. Configure .env.local as described above with `DATABASE_URL` pointing to your PostgreSQL instance.
 
-3. Run the project in development mode:
+3. The Drizzle ORM schema is already configured in [src/db/schema.ts](src/db/schema.ts). Ensure your database has the required tables:
+
+```bash
+# Apply migrations if needed
+npx drizzle-kit migrate
+```
+
+4. Run the project in development mode:
 
 ```bash
 npm run dev
@@ -136,37 +150,49 @@ npm run dev
 
 ## Available Scripts
 
-- npm run dev: starts the development server
-- npm run build: creates a production build
-- npm run start: runs the production build
-- npm run lint: runs lint checks
+- `npm run dev`: starts the development server
+- `npm run build`: creates a production build
+- `npm run start`: runs the production build
+- `npm run lint`: runs lint checks
 
-## Suggested Database Structure
+### Drizzle ORM Scripts
 
-For full functionality, ensure equivalent tables exist:
+- `npx drizzle-kit generate`: generates migrations based on schema changes
+- `npx drizzle-kit migrate`: applies pending migrations
+- `npx drizzle-kit push`: pushes schema changes directly to database (dev only)
 
-- cars
-  - id
-  - brand
-  - model
-  - year
-  - mileage
-  - notes
-  - photo_path
+## Database Schema
 
-- chat_conversations
-  - id
-  - owner_key
-  - title
-  - created_at
+The database schema is defined in [src/db/schema.ts](src/db/schema.ts) using Drizzle ORM:
 
-- chat_messages
-  - id
-  - conversation_id
-  - role
-  - content
-  - image_data_urls
-  - created_at
+### Tables
+
+- **cars**
+  - id (UUID, primary key)
+  - brand, model (text)
+  - year, mileage (integer)
+  - notes, photo_path (optional text)
+
+- **chat_conversations**
+  - id (UUID, primary key)
+  - owner_key (text, indexed)
+  - title (optional text)
+  - created_at (timestamp with timezone)
+
+- **chat_messages**
+  - id (UUID, primary key)
+  - conversation_id (UUID, foreign key with cascade delete)
+  - role ('user' | 'assistant')
+  - content (text)
+  - image_data_urls (JSONB, optional)
+  - created_at (timestamp with timezone)
+  - Indexes: (conversation_id, created_at)
+
+### Schema Management
+
+- Schema is version-controlled in [src/db/schema.ts](src/db/schema.ts)
+- Generate migrations: `npx drizzle-kit generate`
+- Migrations stored in [supabase/migrations/](supabase/migrations/)
 
 ## Project Structure
 
@@ -183,7 +209,13 @@ components/
 lib/
   hooks/
   supabase/
+src/
+  db/
+    index.ts          # Drizzle ORM database instance
+    schema.ts         # Drizzle ORM table definitions
 types/
+supabase/
+  migrations/        # Database migration files
 ```
 
 ## Roadmap Ideas
